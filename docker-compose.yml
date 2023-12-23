@@ -1,20 +1,36 @@
-version: "3.8"
+x-default: &default
+  build: .
+  volumes:
+    - ".:/app"
+    - "./opt:/app/opt"
+    - "/storage/charspeak/assets:/app/assets"
+    - "/storage/charspeak:/storage"
+  shm_size: "12gb"
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            device_ids: [ '0' ]
+            capabilities: [ gpu ]
+
 services:
-  rvc:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: rvc
-    volumes:
-      - ./weights:/app/assets/weights
-      - ./opt:/app/opt
-      # - ./dataset:/app/dataset # you can use this folder in order to provide your dataset for model training
+  api:
+    <<: *default
+    command: uvicorn server.main:app --host 0.0.0.0 --port 7866
     ports:
-      - 7865:7865
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+      - "${RVC_PORT}:7866"
+    environment:
+      RVC_PORT: 7866
+
+  webui:
+    <<: *default
+    ports:
+      - "${RVC_WEBUI_PORT}:7865"
+    environment:
+      RVC_PORT: 7865
+
+networks:
+  default:
+    name: charspeak
+    external: true

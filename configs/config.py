@@ -19,7 +19,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 version_config_list = [
     "v1/32k.json",
     "v1/40k.json",
@@ -70,35 +69,44 @@ class Config:
 
     @staticmethod
     def arg_parse() -> tuple:
-        exe = sys.executable or "python"
-        parser = argparse.ArgumentParser()
-        parser.add_argument("--port", type=int, default=7865, help="Listen port")
-        parser.add_argument("--pycmd", type=str, default=exe, help="Python command")
-        parser.add_argument("--colab", action="store_true", help="Launch in colab")
-        parser.add_argument(
-            "--noparallel", action="store_true", help="Disable parallel processing"
-        )
-        parser.add_argument(
-            "--noautoopen",
-            action="store_true",
-            help="Do not open in browser automatically",
-        )
-        parser.add_argument(
-            "--dml",
-            action="store_true",
-            help="torch_dml",
-        )
-        cmd_opts = parser.parse_args()
-
-        cmd_opts.port = cmd_opts.port if 0 <= cmd_opts.port <= 65535 else 7865
+        # exe = sys.executable or "python"
+        # parser = argparse.ArgumentParser()
+        # parser.add_argument("--port", type=int, default=7865, help="Listen port")
+        # parser.add_argument("--pycmd", type=str, default=exe, help="Python command")
+        # parser.add_argument("--colab", action="store_true", help="Launch in colab")
+        # parser.add_argument(
+        #     "--noparallel", action="store_true", help="Disable parallel processing"
+        # )
+        # parser.add_argument(
+        #     "--noautoopen",
+        #     action="store_true",
+        #     help="Do not open in browser automatically",
+        # )
+        # parser.add_argument(
+        #     "--dml",
+        #     action="store_true",
+        #     help="torch_dml",
+        # )
+        # cmd_opts = parser.parse_args()
+        #
+        # cmd_opts.port = cmd_opts.port if 0 <= cmd_opts.port <= 65535 else 7865
+        #
+        # return (
+        #     cmd_opts.pycmd,
+        #     cmd_opts.port,
+        #     cmd_opts.colab,
+        #     cmd_opts.noparallel,
+        #     cmd_opts.noautoopen,
+        #     cmd_opts.dml,
+        # )
 
         return (
-            cmd_opts.pycmd,
-            cmd_opts.port,
-            cmd_opts.colab,
-            cmd_opts.noparallel,
-            cmd_opts.noautoopen,
-            cmd_opts.dml,
+            sys.executable or "python",
+            int(os.environ.get("RVC_PORT", 7865)),
+            False,
+            False,
+            False,
+            False
         )
 
     # has_mps is only available in nightly pytorch (for now) and MasOS 12.3+.
@@ -141,12 +149,12 @@ class Config:
             i_device = int(self.device.split(":")[-1])
             self.gpu_name = torch.cuda.get_device_name(i_device)
             if (
-                ("16" in self.gpu_name and "V100" not in self.gpu_name.upper())
-                or "P40" in self.gpu_name.upper()
-                or "P10" in self.gpu_name.upper()
-                or "1060" in self.gpu_name
-                or "1070" in self.gpu_name
-                or "1080" in self.gpu_name
+                    ("16" in self.gpu_name and "V100" not in self.gpu_name.upper())
+                    or "P40" in self.gpu_name.upper()
+                    or "P10" in self.gpu_name.upper()
+                    or "1060" in self.gpu_name
+                    or "1070" in self.gpu_name
+                    or "1080" in self.gpu_name
             ):
                 logger.info("Found GPU %s, force to fp32", self.gpu_name)
                 self.is_half = False
@@ -200,10 +208,10 @@ class Config:
         if self.dml:
             logger.info("Use DirectML instead")
             if (
-                os.path.exists(
-                    "runtime\Lib\site-packages\onnxruntime\capi\DirectML.dll"
-                )
-                == False
+                    os.path.exists(
+                        "runtime\Lib\site-packages\onnxruntime\capi\DirectML.dll"
+                    )
+                    == False
             ):
                 try:
                     os.rename(
@@ -228,10 +236,10 @@ class Config:
             if self.instead:
                 logger.info(f"Use {self.instead} instead")
             if (
-                os.path.exists(
-                    "runtime\Lib\site-packages\onnxruntime\capi\onnxruntime_providers_cuda.dll"
-                )
-                == False
+                    os.path.exists(
+                        "runtime\Lib\site-packages\onnxruntime\capi\onnxruntime_providers_cuda.dll"
+                    )
+                    == False
             ):
                 try:
                     os.rename(
