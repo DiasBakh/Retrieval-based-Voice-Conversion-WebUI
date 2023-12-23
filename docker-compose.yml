@@ -3,8 +3,8 @@ x-default: &default
   volumes:
     - ".:/app"
     - "./opt:/app/opt"
-    - "/storage/charspeak/assets:/app/assets"
-    - "/storage/charspeak:/storage"
+    - "${CHARSPEAK_STORAGE_DIR}/assets:/app/assets"
+    - "${CHARSPEAK_STORAGE_DIR}:/storage"
   shm_size: "12gb"
   deploy:
     resources:
