@@ -17,6 +17,7 @@ x-default: &default
 services:
   api:
     <<: *default
+    hostname: rvc_api
     command: uvicorn server.main:app --host 0.0.0.0 --port 7866
     ports:
       - "${RVC_PORT}:7866"
