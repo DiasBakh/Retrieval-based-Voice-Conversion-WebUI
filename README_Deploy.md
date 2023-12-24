@@ -39,4 +39,9 @@ Follow these steps to get started smoothly.
    
     **_NOTES:_** Keep an eye on the magic by using `docker compose logs api -f` to monitor logs in real time.
 
+## Access to services
+
+- Access to original RVC WebUI: http://localhost:7865/
+- Access to Swagger Docs: http://localhost:7866/docs
+
 Happy deploying! 🚀✨
