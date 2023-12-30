@@ -1,18 +1,15 @@
 import hashlib
-import io
+import os
 from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, __version__, UploadFile, Query
-from pydantic import BaseModel, conint, Field, confloat
-from scipy.io import wavfile
+from pydantic import conint, confloat
 from starlette.responses import StreamingResponse
 
-from configs.config import Config, logger
-from infer.modules.vc.modules import VC
-from infer.modules.vc.utils import load_hubert
 from app.tasks import rvc
+from configs.config import logger
 
 # vrc_info = {}
 
@@ -32,83 +29,20 @@ def ping():
     return 'pong'
 
 
-class InferConvert(BaseModel):
-    speaker_id: conint(ge=0, le=2333) = Field(
-        0,
-        description="Select Speaker/Singer ID")
-    # audio_path: str = Field(
-    #     description="Enter the path of the audio file to be processed (default is the correct format example)"
-    # )
-    transpose: int = Field(
-        0,
-        description="Transpose (integer, number of semitones, raise by an octave: 12, lower by an octave: -12)")
-
-    curve_file: Optional[str] = Field(
-        None,
-        description="F0 curve file (optional). One pitch per line. Replaces the default F0 and pitch modulation."
-    )
-    pm: str = Field(
-        "rmvpe",
-        description="""
-Select the pitch extraction algorithm:
-'pm': faster extraction but lower-quality speech;
-'harvest': better bass but extremely slow;
-'crepe': better quality but GPU intensive),
-'rmvpe': best quality, and little GPU requirement'
-"""
-    )
-    feature_index_file: Optional[str] = Field(
-        None,
-        description="Path to the feature index file.",
-    )
-    search_feature_ratio: confloat(ge=0, le=1) = Field(
-        0.75,
-        description="Search feature ratio (controls accent strength, too high has artifacting)",
-    )
-    filter_radius: confloat(ge=0, le=7) = Field(
-        3,
-        description="If >=3: apply median filtering to the harvested pitch results. "
-                    "The value represents the filter radius and can reduce breathiness."
-    )
-    resample_sr: confloat(ge=0, le=48000) = Field(
-        0,
-        description="Resample the output audio in post-processing to the final sample rate. Set to 0 for no resampling."
-    )
-    rms_mix_rate: confloat(ge=0, le=1) = Field(
-        0.25,
-        description="Adjust the volume envelope scaling. "
-                    "Closer to 0, the more it mimicks the volume of the original vocals. "
-                    "Can help mask noise and make volume sound more natural when set relatively low. "
-                    "Closer to 1 will be more of a consistently loud volume."
-    )
-
-    protection: confloat(ge=0, le=0.5) = Field(
-        0.33,
-        description="Protect voiceless consonants and breath sounds to prevent artifacts "
-                    "such as tearing in electronic music. Set to 0.5 to disable. "
-                    "Decrease the value to increase protection, but it may reduce indexing accuracy."
-    )
-
-    def get_args(self, input_file: str):
-        # assert self.feature_index_file.exists()
-        return (
-            self.speaker_id,
-            input_file,
-            self.transpose,
-            self.curve_file,
-            self.pm,
-            self.feature_index_file,
-            None,
-            self.search_feature_ratio,
-            self.filter_radius,
-            self.resample_sr,
-            self.rms_mix_rate,
-            self.protection,
-        )
-
-
 temp_dir = Path('/storage/tmp')
 temp_dir.mkdir(exist_ok=True)
+load_dotenv()
+
+
+@app.post('/upload_model')
+async def upload_model(
+        model_file: UploadFile,
+):
+    content = await model_file.read()
+    hash_name = hashlib.md5(content).hexdigest()
+    with open(f'{os.getenv("weight_root")}/{hash_name}.pth', 'wb') as file:
+        file.write(content)
+    return hash_name
 
 
 @app.post('/infer')
