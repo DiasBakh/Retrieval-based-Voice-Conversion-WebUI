@@ -32,7 +32,7 @@ class VC:
         self.hubert_model = None
 
         self.config = config
-
+    
     def get_vc(self, sid, *to_return_protect):
         logger.info("Get sid: " + sid)
 
@@ -99,10 +99,13 @@ class VC:
         logger.info(f"Loading: {person}")
 
         self.cpt = torch.load(person, map_location="cpu")
+        # logger.warning(self.cpt['config'])
         self.tgt_sr = self.cpt["config"][-1]
         self.cpt["config"][-3] = self.cpt["weight"]["emb_g.weight"].shape[0]  # n_spk
         self.if_f0 = self.cpt.get("f0", 1)
         self.version = self.cpt.get("version", "v1")
+        # logger.info(f"self.if_f0: {self.if_f0}")
+        # logger.info(f"self.version: {self.version}")
 
         synthesizer_class = {
             ("v1", 1): SynthesizerTrnMs256NSFsid,
@@ -124,7 +127,7 @@ class VC:
         else:
             self.net_g = self.net_g.float()
 
-        self.pipeline = Pipeline(self.tgt_sr, self.config)
+        # self.pipeline = Pipeline(self.tgt_sr, self.config)
         n_spk = self.cpt["config"][-3]
         index = {"value": get_index_path_from_model(sid), "__type__": "update"}
         logger.info("Select index: " + index["value"])
@@ -142,19 +145,19 @@ class VC:
         )
 
     def vc_single(
-        self,
-        sid,
-        input_audio_path,
-        f0_up_key,
-        f0_file,
-        f0_method,
-        file_index,
-        file_index2,
-        index_rate,
-        filter_radius,
-        resample_sr,
-        rms_mix_rate,
-        protect,
+            self,
+            sid,
+            input_audio_path,
+            f0_up_key,
+            f0_file,
+            f0_method,
+            file_index,
+            file_index2,
+            index_rate,
+            filter_radius,
+            resample_sr,
+            rms_mix_rate,
+            protect,
     ):
         if input_audio_path is None:
             return "You need to upload an audio", None
@@ -223,21 +226,21 @@ class VC:
             return info, (None, None)
 
     def vc_multi(
-        self,
-        sid,
-        dir_path,
-        opt_root,
-        paths,
-        f0_up_key,
-        f0_method,
-        file_index,
-        file_index2,
-        index_rate,
-        filter_radius,
-        resample_sr,
-        rms_mix_rate,
-        protect,
-        format1,
+            self,
+            sid,
+            dir_path,
+            opt_root,
+            paths,
+            f0_up_key,
+            f0_method,
+            file_index,
+            file_index2,
+            index_rate,
+            filter_radius,
+            resample_sr,
+            rms_mix_rate,
+            protect,
+            format1,
     ):
         try:
             dir_path = (

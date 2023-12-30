@@ -23,7 +23,9 @@ RUN apt-get update && \
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.9 1
 COPY requirements.txt .
 RUN python3 -m pip install --no-cache-dir -r requirements.txt
-RUN python3 -m pip install --no-cache-dir uvicorn fastapi python-box python-multipart
+RUN python3 -m pip install --no-cache-dir \
+    uvicorn fastapi python-box python-multipart celery redis hiredis \
+    pydantic pydantic-settings loguru gevent wrapt
 WORKDIR /app
 
 #RUN aria2c --console-log-level=error -c -x 16 -s 16 -k 1M https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/pretrained_v2/D40k.pth -d assets/pretrained_v2/ -o D40k.pth

@@ -1,4 +1,6 @@
+import hashlib
 import io
+from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -9,8 +11,10 @@ from starlette.responses import StreamingResponse
 
 from configs.config import Config, logger
 from infer.modules.vc.modules import VC
+from infer.modules.vc.utils import load_hubert
+from app.tasks import rvc
 
-vrc_info = {}
+# vrc_info = {}
 
 logger.warning(f"__version__: {__version__}")
 app = FastAPI(title='charspeak_rvc')
@@ -18,21 +22,13 @@ app = FastAPI(title='charspeak_rvc')
 
 @app.on_event("startup")
 async def startup_event():
-    logger.info('Loading dotenv...')
-    load_dotenv()
-    logger.info('Creating config...')
-    config = Config()
-    logger.info('Initializing VC...')
-    vc = VC(config)
-    logger.info('Loading experiment path...')
-    vc.get_vc('experiment_1_e185_s2960.pth')
-    vrc_info['vc'] = vc
-    logger.info('VC loaded successfully.')
+    rvc.task.apply_async().forget()
+    # logger.info('Loading experiment path...')
+    # vc.get_vc('experiment_1_e185_s2960.pth')
 
 
 @app.get('/ping')
 def ping():
-    logger.info(vrc_info)
     return 'pong'
 
 
@@ -111,9 +107,14 @@ Select the pitch extraction algorithm:
         )
 
 
+temp_dir = Path('/storage/tmp')
+temp_dir.mkdir(exist_ok=True)
+
+
 @app.post('/infer')
 async def make_inference(
         input_file: UploadFile,
+        model_name: str = Query(description="Model name to use"),
         speaker_id: conint(ge=0, le=2333) = Query(
             0,
             description="Select Speaker/Singer ID"),
@@ -170,15 +171,16 @@ async def make_inference(
                         "Decrease the value to increase protection, but it may reduce indexing accuracy."
         ),
 ):
-    path = '/storage/input_qwe.wav'
-    with open(path, 'wb') as file:
-        file.write(input_file.file.read())
+    content = await input_file.read()
+    tmp_path = temp_dir / f"{hashlib.md5(content).hexdigest()}.wav"
 
-    # infer_convert = infer_convert or InferConvert()
-    # # args = arg_parse()
-    _, (rate, data) = vrc_info['vc'].vc_single(
+    with open(tmp_path, 'wb') as file:
+        file.write(content)
+
+    out = rvc.task.delay(
+        model_name,
         speaker_id,
-        path,
+        str(tmp_path),
         transpose,
         curve_file,
         pm,
@@ -189,9 +191,25 @@ async def make_inference(
         resample_sr,
         rms_mix_rate,
         protection,
-    )
-    out = io.BytesIO()
-    # out = '/storage/qwe.wav'
-    wavfile.write(out, rate, data)
-    out.seek(0)
+    ).get()
+    # infer_convert = infer_convert or InferConvert()
+    # # args = arg_parse()
+    # _, (rate, data) = vrc_info['vc'].vc_single(
+    #     speaker_id,
+    #     tmp_path,
+    #     transpose,
+    #     curve_file,
+    #     pm,
+    #     feature_index_file,
+    #     None,
+    #     search_feature_ratio,
+    #     filter_radius,
+    #     resample_sr,
+    #     rms_mix_rate,
+    #     protection,
+    # )
+    # out = io.BytesIO()
+    # # out = '/storage/qwe.wav'
+    # wavfile.write(out, rate, data)
+    # out.seek(0)
     return StreamingResponse(out, media_type="audio/wav")

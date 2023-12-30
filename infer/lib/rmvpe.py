@@ -4,6 +4,7 @@ from typing import List, Optional, Tuple
 import numpy as np
 import torch
 
+from app.common.utils import time_func
 from infer.lib import jit
 
 try:
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 class STFT(torch.nn.Module):
     def __init__(
-        self, filter_length=1024, hop_length=512, win_length=None, window="hann"
+            self, filter_length=1024, hop_length=512, win_length=None, window="hann"
     ):
         """
         This module implements an STFT using 1D convolution and 1D transpose convolutions.
@@ -99,7 +100,7 @@ class STFT(torch.nn.Module):
         cutoff = int((self.filter_length / 2) + 1)
         real_part = forward_transform[:, :cutoff, :]
         imag_part = forward_transform[:, cutoff:, :]
-        magnitude = torch.sqrt(real_part**2 + imag_part**2)
+        magnitude = torch.sqrt(real_part ** 2 + imag_part ** 2)
         if return_phase:
             phase = torch.atan2(imag_part.data, real_part.data)
             return magnitude, phase
@@ -130,14 +131,14 @@ class STFT(torch.nn.Module):
         )
         inverse_transform = torch.matmul(self.inverse_basis, cat)
         inverse_transform = fold(inverse_transform)[
-            :, 0, 0, self.pad_amount : -self.pad_amount
-        ]
+                            :, 0, 0, self.pad_amount: -self.pad_amount
+                            ]
         window_square_sum = (
             self.fft_window.pow(2).repeat(cat.size(-1), 1).T.unsqueeze(0)
         )
         window_square_sum = fold(window_square_sum)[
-            :, 0, 0, self.pad_amount : -self.pad_amount
-        ]
+                            :, 0, 0, self.pad_amount: -self.pad_amount
+                            ]
         inverse_transform /= window_square_sum
         return inverse_transform
 
@@ -212,14 +213,14 @@ class ConvBlockRes(nn.Module):
 
 class Encoder(nn.Module):
     def __init__(
-        self,
-        in_channels,
-        in_size,
-        n_encoders,
-        kernel_size,
-        n_blocks,
-        out_channels=16,
-        momentum=0.01,
+            self,
+            in_channels,
+            in_size,
+            n_encoders,
+            kernel_size,
+            n_blocks,
+            out_channels=16,
+            momentum=0.01,
     ):
         super(Encoder, self).__init__()
         self.n_encoders = n_encoders
@@ -250,7 +251,7 @@ class Encoder(nn.Module):
 
 class ResEncoderBlock(nn.Module):
     def __init__(
-        self, in_channels, out_channels, kernel_size, n_blocks=1, momentum=0.01
+            self, in_channels, out_channels, kernel_size, n_blocks=1, momentum=0.01
     ):
         super(ResEncoderBlock, self).__init__()
         self.n_blocks = n_blocks
@@ -341,13 +342,13 @@ class Decoder(nn.Module):
 
 class DeepUnet(nn.Module):
     def __init__(
-        self,
-        kernel_size,
-        n_blocks,
-        en_de_layers=5,
-        inter_layers=4,
-        in_channels=1,
-        en_out_channels=16,
+            self,
+            kernel_size,
+            n_blocks,
+            en_de_layers=5,
+            inter_layers=4,
+            in_channels=1,
+            en_out_channels=16,
     ):
         super(DeepUnet, self).__init__()
         self.encoder = Encoder(
@@ -372,14 +373,14 @@ class DeepUnet(nn.Module):
 
 class E2E(nn.Module):
     def __init__(
-        self,
-        n_blocks,
-        n_gru,
-        kernel_size,
-        en_de_layers=5,
-        inter_layers=4,
-        in_channels=1,
-        en_out_channels=16,
+            self,
+            n_blocks,
+            n_gru,
+            kernel_size,
+            en_de_layers=5,
+            inter_layers=4,
+            in_channels=1,
+            en_out_channels=16,
     ):
         super(E2E, self).__init__()
         self.unet = DeepUnet(
@@ -417,16 +418,16 @@ from librosa.filters import mel
 
 class MelSpectrogram(torch.nn.Module):
     def __init__(
-        self,
-        is_half,
-        n_mel_channels,
-        sampling_rate,
-        win_length,
-        hop_length,
-        n_fft=None,
-        mel_fmin=0,
-        mel_fmax=None,
-        clamp=1e-5,
+            self,
+            is_half,
+            n_mel_channels,
+            sampling_rate,
+            win_length,
+            hop_length,
+            n_fft=None,
+            mel_fmin=0,
+            mel_fmax=None,
+            clamp=1e-5,
     ):
         super().__init__()
         n_fft = win_length if n_fft is None else n_fft
@@ -591,6 +592,7 @@ class RMVPE:
         # f0 = np.array([10 * (2 ** (cent_pred / 1200)) if cent_pred else 0 for cent_pred in cents_pred])
         return f0
 
+    @time_func()
     def infer_from_audio(self, audio, thred=0.03):
         # torch.cuda.synchronize()
         t0 = ttime()
@@ -614,7 +616,7 @@ class RMVPE:
         f0 = self.decode(hidden, thred=thred)
         # torch.cuda.synchronize()
         t3 = ttime()
-        # print("hmvpe:%s\t%s\t%s\t%s"%(t1-t0,t2-t1,t3-t2,t3-t0))
+        print("hmvpe:%s\t%s\t%s\t%s"%(t1-t0,t2-t1,t3-t2,t3-t0))
         return f0
 
     def to_local_average_cents(self, salience, thred=0.05):
@@ -628,8 +630,8 @@ class RMVPE:
         starts = center - 4
         ends = center + 5
         for idx in range(salience.shape[0]):
-            todo_salience.append(salience[:, starts[idx] : ends[idx]][idx])
-            todo_cents_mapping.append(self.cents_mapping[starts[idx] : ends[idx]])
+            todo_salience.append(salience[:, starts[idx]: ends[idx]][idx])
+            todo_cents_mapping.append(self.cents_mapping[starts[idx]: ends[idx]])
         # t2 = ttime()
         todo_salience = np.array(todo_salience)  # 帧长，9
         todo_cents_mapping = np.array(todo_cents_mapping)  # 帧长，9

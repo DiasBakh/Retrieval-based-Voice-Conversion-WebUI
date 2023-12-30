@@ -6,13 +6,6 @@ x-default: &default
     - "${CHARSPEAK_STORAGE_DIR}/assets:/app/assets"
     - "${CHARSPEAK_STORAGE_DIR}:/storage"
   shm_size: "12gb"
-  deploy:
-    resources:
-      reservations:
-        devices:
-          - driver: nvidia
-            device_ids: [ '0' ]
-            capabilities: [ gpu ]
 
 services:
   api:
@@ -23,13 +16,32 @@ services:
       - "${RVC_PORT}:7866"
     environment:
       RVC_PORT: 7866
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - worker
 
-  webui:
+  worker:
     <<: *default
-    ports:
-      - "${RVC_WEBUI_PORT}:7865"
+    command: celery -A app worker -l INFO -P gevent -E --queues rvc -n rvc -c 1
     environment:
-      RVC_PORT: 7865
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      C_FORCE_ROOT: 1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: [ '0' ]
+              capabilities: [ gpu ]
+
+#  webui:
+#    <<: *default
+#    ports:
+#      - "${RVC_WEBUI_PORT}:7865"
+#    environment:
+#      RVC_PORT: 7865
 
 networks:
   default:
