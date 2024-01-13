@@ -19,7 +19,7 @@ app = FastAPI(title='charspeak_rvc')
 
 @app.on_event("startup")
 async def startup_event():
-    rvc.task.apply_async().forget()
+    rvc.task.delay().forget()
     # logger.info('Loading experiment path...')
     # vc.get_vc('experiment_1_e185_s2960.pth')
 
@@ -107,6 +107,7 @@ async def make_inference(
 ):
     content = await input_file.read()
     tmp_path = temp_dir / f"{hashlib.md5(content).hexdigest()}.wav"
+    # logger.warning("tmp_path:\n{}", tmp_path)
 
     with open(tmp_path, 'wb') as file:
         file.write(content)
@@ -126,6 +127,8 @@ async def make_inference(
         rms_mix_rate,
         protection,
     ).get()
+
+    os.remove(tmp_path)
     # infer_convert = infer_convert or InferConvert()
     # # args = arg_parse()
     # _, (rate, data) = vrc_info['vc'].vc_single(

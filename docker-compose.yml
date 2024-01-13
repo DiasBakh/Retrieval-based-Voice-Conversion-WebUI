@@ -25,9 +25,9 @@ services:
     <<: *default
     command: celery -A app worker -l INFO -P gevent -E --queues rvc -n rvc -c 1
     environment:
+      C_FORCE_ROOT: 1
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      C_FORCE_ROOT: 1
     deploy:
       resources:
         reservations:
