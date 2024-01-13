@@ -4,6 +4,7 @@ x-default: &default
     - ".:/app"
     - "./opt:/app/opt"
     - "${CHARSPEAK_STORAGE_DIR}/assets:/app/assets"
+    - "${CHARSPEAK_STORAGE_DIR}/logs:/app/logs"
     - "${CHARSPEAK_STORAGE_DIR}:/storage"
   shm_size: "12gb"
 

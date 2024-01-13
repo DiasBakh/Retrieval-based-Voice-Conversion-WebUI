@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, __version__, UploadFile, Query
+from fastapi import FastAPI, __version__, UploadFile, Query, HTTPException
 from pydantic import conint, confloat
 from starlette.responses import StreamingResponse
 
@@ -74,7 +74,7 @@ async def make_inference(
         """
         ),
         feature_index_file: Optional[str] = Query(
-            None,
+            'added_IVF209_Flat_nprobe_1_experiment_1_v2.index',
             description="Path to the feature index file.",
         ),
         search_feature_ratio: confloat(ge=0, le=1) = Query(
@@ -111,7 +111,10 @@ async def make_inference(
 
     with open(tmp_path, 'wb') as file:
         file.write(content)
-
+    if feature_index_file:
+        feature_index_file = Path('/storage') / feature_index_file
+        if not feature_index_file.exists():
+            raise HTTPException(status_code=400, detail="Feature index file does not exist.")
     out = rvc.task.delay(
         model_name,
         speaker_id,

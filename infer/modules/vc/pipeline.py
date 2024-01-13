@@ -239,6 +239,7 @@ class Pipeline(object):
             score, ix = index.search(npy, k=8)
             weight = np.square(1 / score)
             weight /= weight.sum(axis=1, keepdims=True)
+            print("big_npy is in use.")
             npy = np.sum(big_npy[ix] * np.expand_dims(weight, axis=2), axis=1)
 
             if self.is_half:
@@ -311,9 +312,12 @@ class Pipeline(object):
                 and index_rate != 0
         ):
             try:
+                print('Reading index file.')
                 index = faiss.read_index(file_index)
                 # big_npy = np.load(file_big_npy)
                 big_npy = index.reconstruct_n(0, index.ntotal)
+                print(f'big_npy.shape = {big_npy.shape}')
+                # sys.exit()
             except:
                 traceback.print_exc()
                 index = big_npy = None
