@@ -1,8 +1,6 @@
-import io
 import os
 from pathlib import Path
 
-import faiss
 from dotenv import load_dotenv
 from loguru import logger
 from scipy.io import wavfile
@@ -18,7 +16,7 @@ def main():
     tgt_sr = 40000
     model_name = 'experiment_1_e185_s2960'
     speaker_id = 0
-    tmp_path = '/storage/generated.wav'
+    tmp_path = '/storage/angie_horrified.wav'
     transpose = 0
     curve_file = None
     pm = 'rmvpe'
