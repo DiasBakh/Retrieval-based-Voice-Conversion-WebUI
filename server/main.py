@@ -122,7 +122,7 @@ async def make_inference(
         transpose,
         curve_file,
         pm,
-        feature_index_file,
+        str(feature_index_file),
         None,
         search_feature_ratio,
         filter_radius,
